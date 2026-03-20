@@ -85,18 +85,110 @@ class AICFOOrchestrator:
     
     def _extract_tool_call(self, text: str) -> Optional[Dict[str, Any]]:
         """Extract tool call JSON from model response."""
-        # Try to find JSON pattern in the response
-        json_pattern = r'\{[^{}]*"tool"[^{}]*\}'
-        match = re.search(json_pattern, text, re.DOTALL)
-        
+        # First, try to find JSON in code blocks: ```json {...} ```
+        code_block_pattern = r'```(?:json)?\s*(\[?\{[^`]*"tool"[^`]*\}]\?)\s*```'
+        match = re.search(code_block_pattern, text, re.DOTALL)
+
         if match:
             try:
-                tool_call = json.loads(match.group())
+                parsed = json.loads(match.group(1))
+                # Handle array of tool calls
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    tool_call = parsed[0]
+                else:
+                    tool_call = parsed
                 if "tool" in tool_call and "inputs" in tool_call:
                     return tool_call
             except json.JSONDecodeError:
                 pass
+
+        # Try to find JSON array pattern: [{"tool": ...}]
+        array_start = text.find('[{"tool"')
+        if array_start != -1:
+            bracket_count = 0
+            array_end = array_start
+            in_string = False
+            escape_next = False
+            
+            for i in range(array_start, len(text)):
+                char = text[i]
+                
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    continue
+                    
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                
+                if not in_string:
+                    if char == '[':
+                        bracket_count += 1
+                    elif char == ']':
+                        bracket_count -= 1
+                        if bracket_count == 0:
+                            array_end = i + 1
+                            break
+            
+            if array_end > array_start:
+                try:
+                    parsed = json.loads(text[array_start:array_end])
+                    if isinstance(parsed, list) and len(parsed) > 0:
+                        tool_call = parsed[0]
+                        if "tool" in tool_call and "inputs" in tool_call:
+                            return tool_call
+                except json.JSONDecodeError:
+                    pass
+
+        # Try to find JSON pattern with balanced braces (handles arrays and nested objects)
+        # Look for {"tool": ... "inputs": {...}} pattern
+        json_start = text.find('{"tool"')
+        if json_start == -1:
+            json_start = text.find('{"tool":')
         
+        if json_start != -1:
+            # Find matching closing brace by counting braces
+            brace_count = 0
+            json_end = json_start
+            in_string = False
+            escape_next = False
+            
+            for i in range(json_start, len(text)):
+                char = text[i]
+                
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    continue
+                    
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                
+                if not in_string:
+                    if char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            json_end = i + 1
+                            break
+            
+            if json_end > json_start:
+                try:
+                    tool_call = json.loads(text[json_start:json_end])
+                    if "tool" in tool_call and "inputs" in tool_call:
+                        return tool_call
+                except json.JSONDecodeError:
+                    pass
+
         # Also check if the entire response is JSON
         try:
             tool_call = json.loads(text.strip())
@@ -104,7 +196,7 @@ class AICFOOrchestrator:
                 return tool_call
         except json.JSONDecodeError:
             pass
-        
+
         return None
     
     def _format_tool_result(self, tool_name: str, result: Dict[str, Any]) -> str:
