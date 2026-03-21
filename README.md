@@ -14,7 +14,7 @@ A local offline financial analysis assistant powered by Phi-3 Mini (3B parameter
 ### 1. Setup
 
 ```bash
-cd "/home/vansh/vansh private/AI CFO"
+cd "user/AI CFO"
 
 # Run setup script (creates venv, installs dependencies and Ollama)
 chmod +x setup.sh
