@@ -6,7 +6,6 @@ A local offline financial analysis assistant powered by Phi-3 Mini (3B parameter
 
 - **Local & Offline**: No external APIs, fully private
 - **Tool-Based Architecture**: LLM never calculates - uses deterministic Python functions
-- **Multiple Interfaces**: CLI and Streamlit UI
 - **Financial Tools**: NPV, IRR, ROI, Break-Even, Financial Ratios
 - **Fully Auditable**: Full auditinng transparency in Financial Deals.
 
