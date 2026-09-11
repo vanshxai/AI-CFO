@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Dual Cam</string>
+    <string name="permission_rationale">Camera and microphone access are needed to record from both cameras at once.</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="unsupported_message">This device doesn\'t support recording from the front and back cameras at the same time.</string>
+    <string name="close">Close</string>
+    <string name="cd_record">Record</string>
+    <string name="cd_swap_cameras">Swap cameras</string>
+    <string name="cd_toggle_torch">Toggle flashlight</string>
+</resources>
